@@ -1,0 +1,48 @@
+FROM php:8.2-fpm-alpine
+
+ENV PHP_INI_DIR=/usr/local/etc/php
+
+RUN addgroup --gid 1000 php && \
+    adduser -u 1000 -G php -D -h /code php && \
+    chown php:php -R /code && \
+    set -ex && \
+    apk update && \
+    apk add --no-cache supercronic tzdata supervisor shadow logrotate bash openssh zip unzip linux-headers libzip libzip-dev libpng-dev freetype-dev jpeg-dev libjpeg-turbo-dev libpq imap-dev postgresql-dev krb5-dev ${PHPIZE_DEPS}  && \
+    pecl install -o -f redis && \
+    docker-php-ext-configure pgsql -with-pgsql=/usr/local/pgsql && \
+    docker-php-ext-configure imap --with-kerberos --with-imap-ssl && \
+    docker-php-ext-configure gd --with-freetype --with-jpeg && \
+    docker-php-ext-configure opcache && \
+    ln -s /usr/lib/libnsl.so.2.0.0 /usr/lib/libnsl.so.1 && \
+    docker-php-ext-install exif pdo pdo_pgsql pgsql imap opcache gd zip && \
+    docker-php-ext-enable redis && \
+    cp /usr/share/zoneinfo/America/Sao_Paulo /etc/localtime && \
+    apk del tzdata zip ${PHPIZE_DEPS} postgresql-dev krb5-dev && \
+    rm -rf /var/lib/apt/lists/* && \
+    rm -rf /tmp/pear && \
+    rm -rf /tmp/* /var/lib/apt/lists/* && \
+    mv "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini" && \
+    sed -i 's/upload_max_filesize = 2M/upload_max_filesize = 2G/g' "$PHP_INI_DIR/php.ini" && \
+    sed -i 's/post_max_size = 8M/post_max_size = 2G/g' "$PHP_INI_DIR/php.ini" && \
+    rm -rf /var/cache/apk/* && \
+    echo "opcache.enable=1" >>/usr/local/etc/php/php.ini && \
+    echo "opcache.enable_cli=1" >>/usr/local/etc/php/php.ini && \
+    echo "opcache.jit_buffer_size=500M" >>/usr/local/etc/php/php.ini && \
+    echo "opcache.jit=tracing" >>/usr/local/etc/php/php.ini && \
+    echo "opcache.jit=1255" >>/usr/local/etc/php/php.ini && \
+    (crontab -l 2>/dev/null; echo "* * * * * cd /code && php artisan schedule:run >> storage/logs/crond.log 2>&1") | crontab - && \
+    (crontab -l 2>/dev/null; echo "0 0 * * * logrotate -s /etc/logrotate.status /etc/logrotate.conf 2>&1") | crontab - && \
+    cd /usr/local/bin/ && \
+    php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');" && \
+    php composer-setup.php && \
+    php -r "unlink('composer-setup.php');" && \
+    mv composer.phar composer
+
+COPY logrotate.conf /etc/logrotate.conf
+
+COPY supervisor.conf /etc/supervisord.conf
+
+USER php
+WORKDIR /code
+EXPOSE 9000
+CMD ["supervisord"]
