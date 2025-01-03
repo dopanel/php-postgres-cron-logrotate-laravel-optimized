@@ -1,0 +1,35 @@
+# Laravel Optimized Docker Image with PHP, PostgreSQL, Cron, and Logrotate
+
+This repository provides a Docker image optimized for Laravel projects, including cron, logrotate and PostgresSQL Extensions.
+
+## Main Files
+
+1. **Dockerfile-X.X**
+   - Builds the Docker image based on PHP X.X Version.
+   - Installs PostgreSQL, cron, and logrotate.
+   - Configures `supervisor` to manage essential processes.
+
+2. **docker-compose.yaml**
+   - An example of usage.
+   - Sets up volumes for data persistence and port mapping.
+
+3. **logrotate.conf**
+   - Configures logrotate to manage and rotate application logs, ensuring they do not consume excessive disk space.
+
+4. **supervisor.conf**
+   - Defines supervision for essential processes like the web server and scheduled tasks, ensuring they remain running.
+
+5. **queues.conf**
+   - If you need more queues, just create the config in the "queues.conf", the supervisor will read this config file and start the queues.
+
+## Features of the Docker Image
+
+- **PHP**: Provides an updated environment for running Laravel applications.
+- **PostgreSQL**: Includes the PostgreSQL extensions database for data storage.
+- **Cron**: Enables periodic task scheduling, such as Laravel artisan commands.
+- **Logrotate**: Manages log rotation and compression to prevent unbounded log growth.
+- **Supervisor**: Monitors and maintains essential processes for environment stability.
+
+## Usage Instructions
+
+Just use the image "dopanel/php-postgres-cron-logrotate-laravel-optimized" in your Larave Project, check the *docker-compose.yaml* to see and example.

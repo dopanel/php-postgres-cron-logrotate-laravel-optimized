@@ -1,0 +1,12 @@
+[program:queue-queuenamehere]
+process_name=%(process_num)02d
+command=php /code/artisan queue:work --queue=queuenamehere --sleep=10 --tries=3 --max-time=3600
+autostart=true
+autorestart=true
+stopasgroup=true
+killasgroup=true
+user=php
+numprocs=1
+redirect_stderr=true
+stdout_logfile=/code/storage/logs/queue_queuenamehere_%(process_num)02d.log
+stopwaitsecs=3600

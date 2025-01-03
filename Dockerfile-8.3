@@ -1,4 +1,4 @@
-FROM php:8.2-fpm-alpine
+FROM php:8.3-fpm-alpine
 
 ENV PHP_INI_DIR=/usr/local/etc/php
 
@@ -7,7 +7,7 @@ RUN addgroup --gid 1000 php && \
     chown php:php -R /code && \
     set -ex && \
     apk update && \
-    apk add --no-cache npm git supercronic tzdata supervisor net-snmp-dev shadow logrotate bash openssh zip unzip linux-headers libzip libzip-dev libpng-dev freetype-dev jpeg-dev libjpeg-turbo-dev libpq imap-dev postgresql-dev krb5-dev ${PHPIZE_DEPS}  && \
+    apk add --no-cache busybox-suid npm git supercronic tzdata supervisor net-snmp-dev shadow logrotate bash openssh zip unzip linux-headers libzip libzip-dev libpng-dev freetype-dev jpeg-dev libjpeg-turbo-dev libpq imap-dev postgresql-dev krb5-dev ${PHPIZE_DEPS}  && \
     pecl install -o -f redis && \
     docker-php-ext-configure pgsql -with-pgsql=/usr/local/pgsql && \
     docker-php-ext-configure imap --with-kerberos --with-imap-ssl && \
@@ -31,7 +31,6 @@ RUN addgroup --gid 1000 php && \
     echo "opcache.jit=tracing" >>/usr/local/etc/php/php.ini && \
     echo "opcache.jit=1255" >>/usr/local/etc/php/php.ini && \
     echo "date.timezone = America/Sao_Paulo" >> /usr/local/etc/php/php.ini && \
-    (crontab -l 2>/dev/null; echo "* * * * * cd /code && php artisan schedule:run >> storage/logs/crond.log 2>&1") | crontab - && \
     (crontab -l 2>/dev/null; echo "0 0 * * * logrotate -s /etc/logrotate.status /etc/logrotate.conf 2>&1") | crontab - && \
     cd /usr/local/bin/ && \
     php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');" && \
@@ -45,6 +44,11 @@ COPY logrotate.conf /etc/logrotate.conf
 COPY supervisor.conf /etc/supervisord.conf
 
 USER php
+
+RUN (crontab -l 2>/dev/null; echo "* * * * * cd /code && php artisan schedule:run >> storage/logs/crond.log 2>&1") | crontab - 
+
+# (crontab -l 2>/dev/null; echo "10 * * * * /bin/bash -c 'cd /code && supervisorctl restart all >> storage/logs/supervisor-restart.log 2>&1'") | crontab -
+
 WORKDIR /code
 EXPOSE 9000
 CMD ["supervisord"]
